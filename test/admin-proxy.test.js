@@ -19,3 +19,17 @@ test('preview and missing proxy config fail closed; production signs trusted IP 
   assert.match(res.headers['Set-Cookie'],/HttpOnly/);
  }finally{globalThis.fetch=originalFetch;for(const k of ['VERCEL_ENV','ADMIN_PROXY_SECRET','ADMIN_PROXY_BACKEND_URL']){if(old[k]===undefined)delete process.env[k];else process.env[k]=old[k]}}
 });
+
+test('product image uses signed binary body and enforces the 4 MiB boundary',async()=>{
+ const old={...process.env},originalFetch=globalThis.fetch;let captured,calls=0;
+ try{
+  process.env.VERCEL_ENV='production';process.env.ADMIN_PROXY_SECRET='ab'.repeat(32);process.env.ADMIN_PROXY_BACKEND_URL='https://backend.invalid';
+  globalThis.fetch=async(...args)=>{captured=args;calls++;return new Response('{}',{status:200})};
+  const productId='0123456789abcdef01234567',route='products/'+productId+'/image',bytes=Buffer.alloc(4*1024*1024,7);
+  const req={method:'PUT',query:{path:['products',productId,'image']},headers:{origin:'https://frontend.invalid','x-vercel-forwarded-for':'192.0.2.2','x-admin-request':'1','content-type':'application/octet-stream'},body:bytes};
+  let res=response();await handler(req,res);assert.equal(res.statusCode,200);assert.equal(calls,1);assert.equal(captured[0],'https://backend.invalid/api/admin/'+route);assert.equal(captured[1].headers['Content-Type'],'application/octet-stream');assert.equal(captured[1].body.length,bytes.length);
+  const h=captured[1].headers,message=[h['X-Admin-Proxy-Time'],h['X-Admin-Proxy-Nonce'],'192.0.2.2','PUT','/api/admin/'+route,req.headers.origin,hash(''),hash(bytes)].join('\n');assert.equal(h['X-Admin-Body-Hash'],hash(bytes));assert.equal(h['X-Admin-Proxy-Signature'],createHmac('sha256',Buffer.from(process.env.ADMIN_PROXY_SECRET,'hex')).update(message).digest('hex'));
+  res=response();await handler({...req,body:Buffer.alloc(4*1024*1024+1)},res);assert.equal(res.statusCode,400);assert.equal(calls,1);
+  res=response();await handler({...req,query:{path:['products',productId,'unexpected']}},res);assert.equal(res.statusCode,404);assert.equal(calls,1);
+ }finally{globalThis.fetch=originalFetch;for(const k of ['VERCEL_ENV','ADMIN_PROXY_SECRET','ADMIN_PROXY_BACKEND_URL']){if(old[k]===undefined)delete process.env[k];else process.env[k]=old[k]}}
+});

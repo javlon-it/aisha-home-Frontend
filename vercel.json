@@ -1,1 +1,1 @@
-{ "rewrites": [ { "source": "/api/admin/:path", "destination": "/api/admin-proxy" }, { "source": "/:path((?!api/).*)", "destination": "/index.html" } ] }
+{ "rewrites": [ { "source": "/api/admin/:path*", "destination": "/api/admin-proxy" }, { "source": "/:path((?!api/).*)", "destination": "/index.html" } ] }

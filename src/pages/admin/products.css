@@ -1,0 +1,11 @@
+.inventory-heading{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+.inventory-grid{display:grid;grid-template-columns:minmax(180px,240px) 1fr;gap:28px}
+.inventory-grid aside{display:grid;align-content:start;gap:8px}
+.inventory-item{text-align:left;padding:10px}
+.inventory-form{display:grid;gap:12px;margin:16px 0 24px}
+.inventory-form label,.inventory section label{display:grid;gap:6px}
+.inventory-form input,.inventory-form textarea{width:100%;padding:10px;border:1px solid #d9c9bb;border-radius:8px}
+.inventory-form textarea{min-height:90px}.inventory-form button{justify-self:start}
+.inventory section{margin-top:24px}.inventory-image{display:block;max-width:200px;max-height:180px;object-fit:contain}
+.inventory-variant{padding:16px 0;border-top:1px solid #eaded3}
+@media(max-width:700px){.inventory-grid{grid-template-columns:1fr}}
