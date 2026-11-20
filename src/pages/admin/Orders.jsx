@@ -2,6 +2,7 @@ import {useCallback,useEffect,useRef,useState} from 'react';
 import {adminOrders,adminOrderAction} from '../../services/admin.js';
 import './products.css';
 import './orders.css';
+import SalesAdmin from './Sales.jsx';
 
 const money=value=>Number.isFinite(value)?new Intl.NumberFormat('uz-UZ').format(value)+' so‘m':'Aniqlanmagan';
 const nextStatuses={Yangi:['Jarayonda','Bekor qilingan'],Jarayonda:['Yakunlangan','Bekor qilingan']};
@@ -14,7 +15,7 @@ export default function OrdersAdmin(){
  async function run(action,success){if(lock.current)return;lock.current=true;setBusy(true);setError('');setNotice('');try{await action();await refresh();setNotice(success)}catch(e){setError(e.message||'Amalni bajarib bo‘lmadi.')}finally{lock.current=false;setBusy(false)}}
  function statusChange(order,status){if(!status)return;if(status==='Bekor qilingan'&&!window.confirm('Buyurtma bekor qilinadi va band qilingan mahsulot omborga qaytariladi. Davom etasizmi?'))return;run(()=>adminOrderAction(order._id,'status',{status}),'Buyurtma holati yangilandi.')}
  function saveFee(e,order){e.preventDefault();const fee=Number(new FormData(e.currentTarget).get('fee'));run(()=>adminOrderAction(order._id,'delivery-fee',{fee}),'Yetkazish narxi saqlandi.')}
- return <section className="panel inventory admin-orders"><p className="eyebrow">BOSHQARUV PANELI</p><h1>Buyurtmalar</h1><p>Internet buyurtmalari va ularning holati.</p>
+ return <section className="panel inventory admin-orders"><p className="eyebrow">BOSHQARUV PANELI</p><h1>Buyurtmalar</h1><SalesAdmin/><p>Internet buyurtmalari va ularning holati.</p>
  {error&&<p role="alert" className="admin-error">{error}</p>}{notice&&<p role="status">{notice}</p>}
  {loading?<p role="status">Yuklanmoqda...</p>:error&&!orders.length?null:!orders.length?<p>Buyurtmalar yo‘q.</p>:orders.map(order=><article className="admin-order" key={order._id}>
   <div className="inventory-heading"><h2>Buyurtma #{order._id}</h2><strong>{order.status}</strong></div>
