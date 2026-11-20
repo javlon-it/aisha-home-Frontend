@@ -16,6 +16,7 @@ export default async function handler(req,res){
  const allowed=settingsAllowed||({login:'POST',session:'GET',logout:'POST',products:'GET',dashboard:'GET'})[route]===req.method||
   (route==='products'&&req.method==='POST')||
   (route==='orders'&&req.method==='GET')||
+  (route==='orders-summary'&&req.method==='GET')||
   (route==='sales'&&['GET','POST'].includes(req.method))||
   (route==='customers'&&req.method==='GET')||
   (/^customers\/[a-f0-9]{24}$/i.test(route)&&req.method==='GET')||

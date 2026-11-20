@@ -5,6 +5,7 @@ export const adminLogout=()=>request('/logout',{method:'POST',headers:{'X-Admin-
 export const adminProducts=()=>request('/products');
 export const adminDashboard=(period='monthly',date)=>request('/dashboard?period='+encodeURIComponent(period)+'&date='+encodeURIComponent(date));
 export const adminOrders=(page=1)=>request(page===1?'/orders':'/orders/page/'+page);
+export const adminOrderSummary=()=>request('/orders-summary');
 export const adminOrderAction=(id,field,body)=>request('/orders/'+id+'/'+field,{method:'PATCH',headers:{'Content-Type':'application/json','X-Admin-Request':'1'},body:JSON.stringify(body)});
 export const adminSales=()=>request('/sales');
 export const createAdminSale=(body,key)=>request('/sales',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Request':'1','Idempotency-Key':key},body:JSON.stringify(body)});

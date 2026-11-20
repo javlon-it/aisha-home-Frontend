@@ -537,7 +537,8 @@ h1 { font-family: Georgia, serif; font-size: clamp(34px, 5vw, 58px); font-weight
 .admin-auth .brand { font-family: Georgia, serif; font-size: 30px; letter-spacing: .13em; text-decoration: none; }
 .admin-auth .brand small { display: block; font: 11px Arial; letter-spacing: .08em; }
 .sidebar nav { display: grid; gap: 8px; }
-.sidebar nav a { padding: 12px; border-radius: 8px; text-decoration: none; }
+.sidebar nav a { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px; border-radius: 8px; text-decoration: none; }
+.admin-order-count { display: inline-grid; min-width: 24px; height: 24px; place-items: center; border-radius: 999px; padding: 0 7px; background: #f8eee5; color: #392720; font-size: 12px; font-weight: 700; }
 .sidebar nav a.active { background: #76533f; }
 .store-link { margin-top: auto; }
 .admin-main { min-width: 0; padding: 28px; }
