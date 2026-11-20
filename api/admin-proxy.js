@@ -15,6 +15,9 @@ export default async function handler(req,res){
   (route==='products'&&req.method==='POST')||
   (route==='orders'&&req.method==='GET')||
   (route==='sales'&&['GET','POST'].includes(req.method))||
+  (route==='customers'&&req.method==='GET')||
+  (/^customers\/[a-f0-9]{24}$/i.test(route)&&req.method==='GET')||
+  (/^customers\/[a-f0-9]{24}\/notes$/i.test(route)&&req.method==='POST')||
   (route==='returns'&&req.method==='GET')||
   (/^sales\/[a-f0-9]{24}\/returns$/i.test(route)&&req.method==='POST')||
   (/^orders\/page\/[1-9][0-9]*$/.test(route)&&req.method==='GET')||
@@ -27,6 +30,7 @@ export default async function handler(req,res){
   (/^variants\/[a-f0-9]{24}$/i.test(route)&&req.method==='PATCH')||
   (/^variants\/[a-f0-9]{24}\/receipts$/i.test(route)&&req.method==='POST');
  if(!allowed)return res.status(404).json({error:{code:'NOT_FOUND',message:'Manzil topilmadi.'}});
+ let query='';if(route==='customers'&&req.method==='GET'){const q=req.query?.q;if(q!==undefined){if(typeof q!=='string'||q.length>100)return res.status(400).json({error:{code:'INVALID_SEARCH',message:'Qidiruv matnini tekshiring.'}});query='?q='+encodeURIComponent(q)}}else if(Object.keys(req.query||{}).some(key=>key!=='path'))return res.status(400).json({error:{code:'INVALID_QUERY',message:'So‘rov parametrlarini tekshiring.'}});
  let ip=req.headers['x-vercel-forwarded-for'];
  if(typeof ip!=='string')return unavailable(res);
  if(ip.startsWith('::ffff:'))ip=ip.slice(7);ip=ip.toLowerCase();
@@ -50,7 +54,7 @@ export default async function handler(req,res){
  if(body.length)headers['Content-Type']=isImage?'application/octet-stream':'application/json';
  if(typeof req.headers['idempotency-key']==='string')headers['Idempotency-Key']=req.headers['idempotency-key'];
  try{
-  const upstream=await fetch(backend.origin+path,{method:req.method,headers,...(body.length?{body}:{}),redirect:'error',signal:AbortSignal.timeout(25000)});
+  const upstream=await fetch(backend.origin+path+query,{method:req.method,headers,...(body.length?{body}:{}),redirect:'error',signal:AbortSignal.timeout(25000)});
   const setCookie=upstream.headers.get('set-cookie');if(setCookie)res.setHeader('Set-Cookie',setCookie);
   const retry=upstream.headers.get('retry-after');if(retry)res.setHeader('Retry-After',retry);
   res.setHeader('Content-Type','application/json; charset=utf-8');return res.status(upstream.status).send(await upstream.text());

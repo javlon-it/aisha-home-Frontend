@@ -1,0 +1,6 @@
+.crm-customer-list{list-style:none;padding:0;display:grid;gap:10px}
+.crm-customer{width:100%;display:grid;gap:5px;text-align:left;padding:14px;border:1px solid #ddd4cb;border-radius:12px;background:#fffaf6;color:inherit;cursor:pointer}
+.crm-customer strong{font-size:1.05rem}
+.crm-profile{padding:16px;margin:16px 0;border:1px solid #ddd4cb;border-radius:12px;background:#fffaf6}
+.crm-profile h2{margin-top:0}
+.admin-crm section+section{margin-top:24px}

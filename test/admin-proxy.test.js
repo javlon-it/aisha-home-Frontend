@@ -70,3 +70,16 @@ test('shop return routes are signed and preserve return idempotency',async()=>{
   res=response();await handler({method:'DELETE',query:{path:`sales/${id}/returns`},headers},res);assert.equal(res.statusCode,404);assert.equal(calls,2);
  }finally{globalThis.fetch=originalFetch;for(const k of ['VERCEL_ENV','ADMIN_PROXY_SECRET','ADMIN_PROXY_BACKEND_URL']){if(old[k]===undefined)delete process.env[k];else process.env[k]=old[k]}}
 });
+
+test('CRM list and profile routes are signed, with bounded phone/name search',async()=>{
+ const old={...process.env},originalFetch=globalThis.fetch;let calls=0,captured;
+ try{process.env.VERCEL_ENV='production';process.env.ADMIN_PROXY_SECRET='ab'.repeat(32);process.env.ADMIN_PROXY_BACKEND_URL='https://backend.example';globalThis.fetch=async(...args)=>{calls++;captured=args;return new Response('{}',{status:200})};
+  const id='65f000000000000000000001',headers={'x-vercel-forwarded-for':'192.0.2.10','x-admin-request':'1'};
+  let res=response();await handler({method:'GET',query:{path:'customers',q:'+998 90 123 45 67'},headers},res);assert.equal(res.statusCode,200);assert.equal(captured[0],'https://backend.example/api/admin/customers?q=%2B998%2090%20123%2045%2067');
+  let h=captured[1].headers,message=[h['X-Admin-Proxy-Time'],h['X-Admin-Proxy-Nonce'],'192.0.2.10','GET','/api/admin/customers','',hash(''),hash('')].join('\n');assert.equal(h['X-Admin-Proxy-Signature'],createHmac('sha256',Buffer.from(process.env.ADMIN_PROXY_SECRET,'hex')).update(message).digest('hex'));
+  res=response();await handler({method:'GET',query:{path:['customers',id]},headers},res);assert.equal(res.statusCode,200);
+  res=response();await handler({method:'POST',query:{path:['customers',id,'notes']},headers,body:{text:'Synthetic CRM note'}},res);assert.equal(res.statusCode,200);assert.equal(captured[0],'https://backend.example/api/admin/customers/'+id+'/notes');
+  res=response();await handler({method:'GET',query:{path:'customers',q:'x'.repeat(101)},headers},res);assert.equal(res.statusCode,400);
+  res=response();await handler({method:'DELETE',query:{path:['customers',id]},headers},res);assert.equal(res.statusCode,404);assert.equal(calls,3);
+ }finally{globalThis.fetch=originalFetch;for(const k of ['VERCEL_ENV','ADMIN_PROXY_SECRET','ADMIN_PROXY_BACKEND_URL']){if(old[k]===undefined)delete process.env[k];else process.env[k]=old[k]}}
+});
