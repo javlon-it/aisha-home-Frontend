@@ -5,6 +5,7 @@ import {money} from '../../components/shop/ProductCard.jsx';
 import {useCart} from '../../store/cart.jsx';
 import {BreadcrumbNavigation, ErrorState, LoadingState, PremiumCard, ShopPageHeader, StatusBadge} from '../../components/shop/ShopUI.jsx';
 import {FiArrowLeft, FiArrowRight, FiShoppingBag} from 'react-icons/fi';
+import {productPricing} from '../../services/product-pricing.js';
 
 export default function Product() {
   const {add} = useCart();
@@ -60,7 +61,7 @@ export default function Product() {
               {sizes.map(value => <option key={value}>{value}</option>)}
             </select></label>
           </fieldset>
-          {variant ? <div className="aisha-variant-summary"><p className="price">{money(variant.price)}</p><StatusBadge>{variant.isAvailable ? 'Mavjud' : 'Sotuvda yo‘q'}</StatusBadge></div> : <p className="aisha-variant-unavailable" role="status">Bu variant mavjud emas.</p>}
+          {variant ? <div className="aisha-variant-summary"><p className="price">{productPricing(variant).discountPercent>0&&<><del>{money(productPricing(variant).originalPrice)}</del> <span>{productPricing(variant).discountPercent}% chegirma · </span></>}{money(productPricing(variant).finalPrice)}</p><StatusBadge>{variant.isAvailable ? 'Mavjud' : 'Sotuvda yo‘q'}</StatusBadge></div> : <p className="aisha-variant-unavailable" role="status">Bu variant mavjud emas.</p>}
           <details className="collapse collapse-arrow aisha-product-details" open>
             <summary className="collapse-title">Mahsulot xususiyatlari</summary>
             <div className="collapse-content"><dl>{[['O‘lcham', variant?.size], ['Rang', variant?.color], ['Material', variant?.material], ['GSM', variant?.gsm]].map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{typeof value === 'string' && value.trim() ? value : 'Ma’lumot kiritilmagan'}</dd></div>)}</dl></div>

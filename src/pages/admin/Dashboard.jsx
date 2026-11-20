@@ -16,7 +16,7 @@ export default function Dashboard(){
     <article><span>Sof savdo tushumi</span><strong>{money(summary.netSales)}</strong><small>Yakunlangan savdo minus qaytarishlar</small></article>
     <article><span>Sotilgan mahsulot tannarxi</span><strong>{money(summary.costOfGoodsSold)}</strong><small>{summary.missingCostRecords?`${summary.missingCostRecords} ta savdo/qaytarishda tannarx tarixi yetishmaydi`:'Tarixiy tannarx nusxalari asosida'}</small></article>
     <article><span>Yalpi foyda</span><strong>{money(summary.grossProfit)}</strong><small>Sof savdo − mahsulot tannarxi</small></article>
-    <article><span>Chegirmalar</span><strong>{money(summary.discounts)}</strong><small>Jismoniy savdolarda qayd etilgan</small></article>
+    <article><span>Chegirmalar</span><strong>{money(summary.discounts)}</strong><small>Internet va jismoniy savdolarda qayd etilgan</small></article>
     <article><span>Qaytarishlar</span><strong>{money(summary.returns)}</strong><small>{summary.returnRecords} ta qaytarish yozuvi</small></article>
     <article><span>Mijozlar</span><strong>{summary.customers.new} yangi · {summary.customers.repeat} takroriy</strong><small>CRM profiliga bog‘langan yakunlangan savdolar</small></article>
    </div>

@@ -6,7 +6,8 @@ import {money} from '../../components/shop/ProductCard.jsx';
 import {BreadcrumbNavigation, EmptyState, ErrorState, LoadingState, OrderSummary, PremiumCard, SectionHeading, ShopPageHeader, StatusBadge} from '../../components/shop/ShopUI.jsx';
 import {FiArrowLeft, FiArrowRight, FiMinus, FiPackage, FiPlus, FiShoppingBag, FiTrash2} from 'react-icons/fi';
 
-const total = items => items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+const total = items => items.reduce((sum, item) => sum + (item.finalPrice ?? item.price) * item.quantity, 0);
+const originalTotal = items => items.reduce((sum, item) => sum + (item.originalPrice ?? item.price) * item.quantity, 0);
 const orderErrorMessage = message => String(message || '').includes('Unexpected end of JSON input')
   ? 'Buyurtmalarni hozir yuklab bo‘lmadi. Keyinroq qayta urinib ko‘ring.'
   : message;
@@ -21,7 +22,7 @@ export function Cart() {
       <div className="aisha-cart-items"><SectionHeading eyebrow="TANLANGANLAR" title={`${items.length} ta mahsulot`} />
         {items.map(item => <PremiumCard as="article" className="aisha-cart-item" key={item.variantId}>
           <img src={item.imageUrl} alt="" width="640" height="640" loading="lazy" />
-          <div className="aisha-cart-item-info"><p className="eyebrow">AISHA HOME · DEMO</p><h2>{item.name}</h2><p>{item.color} · {item.size}</p><p className="aisha-unit-price">Bir dona: {money(item.price)}</p></div>
+          <div className="aisha-cart-item-info"><p className="eyebrow">AISHA HOME · DEMO</p><h2>{item.name}</h2><p>{item.color} · {item.size}</p><p className="aisha-unit-price">Bir dona: {(item.discountPercent||0)>0&&<><del>{money(item.originalPrice??item.price)}</del> {item.discountPercent}% chegirma · </>}{money(item.finalPrice??item.price)}</p></div>
           <div className="aisha-cart-item-actions">
             <p className="aisha-line-total"><span>Mahsulot jami</span><strong>{money(item.price * item.quantity)}</strong></p>
             <div className="aisha-cart-control-row"><div className="join aisha-quantity-control" aria-label={`${item.name} miqdori`}>
@@ -33,7 +34,9 @@ export function Cart() {
         </PremiumCard>)}
       </div>
       <OrderSummary className="aisha-cart-summary">
-        <div className="aisha-summary-row"><span>Mahsulotlar</span><strong>{money(total(items))}</strong></div>
+        <div className="aisha-summary-row"><span>Mahsulotlar (asl narx)</span><strong>{money(originalTotal(items))}</strong></div>
+        {total(items)!==originalTotal(items)&&<div className="aisha-summary-row"><span>Mahsulot chegirmasi</span><strong>−{money(originalTotal(items)-total(items))}</strong></div>}
+        <div className="aisha-summary-row"><span>Chegirmadan keyin</span><strong>{money(total(items))}</strong></div>
         <div className="aisha-cart-summary-notes"><p className="aisha-summary-note">Yetkazib berish usuli keyingi bosqichda tanlanadi. Narx va qoldiq serverda qayta tekshiriladi.</p>
           <p className="aisha-demo-note">Yetkazib berish narxini sotuvchi mijoz bilan kelishadi; o‘zi olib ketish bepul.</p></div>
         <div className="aisha-summary-total"><span>Mahsulotlar jami</span><strong>{money(total(items))}</strong></div>
@@ -66,7 +69,7 @@ export function Checkout() {
     setBusy(true);
     setError('');
     const form = new FormData(event.currentTarget);
-    const body = {name: form.get('name'), phone: form.get('phone'), address: form.get('address') || '', method, consent: form.get('consent') === 'on', items: items.map(({variantId, quantity, price}) => ({variantId, quantity, expectedPrice: price}))};
+    const body = {name: form.get('name'), phone: form.get('phone'), address: form.get('address') || '', method, consent: form.get('consent') === 'on', items: items.map(({variantId, quantity, price, originalPrice, discountPercent}) => ({variantId, quantity, expectedPrice: originalPrice ?? price, expectedDiscountPercent: discountPercent ?? 0}))};
     const signature = JSON.stringify(body);
     let saved;
     try { saved = JSON.parse(sessionStorage.getItem('aisha-order-request') || 'null'); } catch {}
@@ -108,8 +111,10 @@ export function Checkout() {
         <button className="btn btn-primary aisha-submit-order" type="submit" disabled={busy || !sessionReady}>{busy ? 'Yuborilmoqda…' : 'Demo buyurtmani tasdiqlash'}</button>
       </form>
       <OrderSummary className="aisha-checkout-summary">
-        <div className="aisha-summary-lines">{items.map(item => <div className="aisha-summary-line" key={item.variantId}><span>{item.name} · {item.color} · {item.size} × {item.quantity}</span><strong>{money(item.price * item.quantity)}</strong></div>)}</div>
-        <div className="aisha-summary-row"><span>Mahsulotlar</span><strong>{money(total(items))}</strong></div>
+        <div className="aisha-summary-lines">{items.map(item => <div className="aisha-summary-line" key={item.variantId}><span>{item.name} · {item.color} · {item.size} × {item.quantity}{(item.discountPercent||0)>0&&<> <del>{money((item.originalPrice??item.price)*item.quantity)}</del> · {item.discountPercent}% chegirma</>}</span><strong>{money((item.finalPrice??item.price) * item.quantity)}</strong></div>)}</div>
+        <div className="aisha-summary-row"><span>Mahsulotlar (asl narx)</span><strong>{money(originalTotal(items))}</strong></div>
+        {total(items)!==originalTotal(items)&&<div className="aisha-summary-row"><span>Mahsulot chegirmasi</span><strong>−{money(originalTotal(items)-total(items))}</strong></div>}
+        <div className="aisha-summary-row"><span>Chegirmadan keyin</span><strong>{money(total(items))}</strong></div>
         <div className="aisha-summary-row"><span>Yetkazish</span><strong>{method === 'delivery' ? 'Sotuvchi bilan kelishiladi' : 'Bepul'}</strong></div>
         <div className="divider aisha-summary-divider" aria-hidden="true" />
         <div className="aisha-summary-total"><span>Umumiy summa</span><strong>{method === 'delivery' ? 'Hali aniqlanmagan' : money(total(items))}</strong></div>
@@ -152,7 +157,7 @@ export function OrderDetail() {
     {state.loading ? <LoadingState label="Buyurtma ma’lumotlari yuklanmoqda" rows={3} /> : state.error ? <ErrorState title="Buyurtma tafsilotlarini yuklab bo‘lmadi" message={orderErrorMessage(state.error)} /> : <>
       <ShopPageHeader eyebrow="BUYURTMA TAFSILOTLARI · DEMO" title={`Buyurtma #${order._id}`} description="Bu ma’lumot demo holatida, haqiqiy to‘lov bajarilmagan." />
       <div className="aisha-order-detail-layout"><PremiumCard className="aisha-detail-card"><div className="aisha-order-card-heading"><SectionHeading eyebrow="BUYURTMA HOLATI" title={order.status} /><StatusBadge>{order.status}</StatusBadge></div>
-        <details className="collapse collapse-arrow aisha-order-items-collapse" open><summary className="collapse-title">Mahsulotlar va hisob</summary><div className="collapse-content">{order.items.map((item, index) => <div className="aisha-detail-line" key={index}><span>{item.name} · {item.color} · {item.size} × {item.quantity}</span><strong>{money(item.price * item.quantity)}</strong></div>)}</div></details>
+        <details className="collapse collapse-arrow aisha-order-items-collapse" open><summary className="collapse-title">Mahsulotlar va hisob</summary><div className="collapse-content">{order.items.map((item, index) => <div className="aisha-detail-line" key={index}><span>{item.name} · {item.color} · {item.size} × {item.quantity}{(item.discountPercent||0)>0&&<> · {item.discountPercent}% chegirma · asl narx {money((item.originalPrice??item.price)*item.quantity)}</>}</span><strong>{money(item.price * item.quantity)}</strong></div>)}<p>Chegirma: {money(order.discountTotal??0)}</p><p>Mahsulotlar jami: {money(order.subtotal)}</p></div></details>
         <dl className="aisha-shipping-details"><div><dt>Qabul qilish</dt><dd>{order.shippingSnapshot.method === 'pickup' ? 'Filialdan olish' : 'Yetkazib berish'}</dd></div>{order.shippingSnapshot.address && <div><dt>Manzil</dt><dd>{order.shippingSnapshot.address}</dd></div>}<div><dt>Yetkazish</dt><dd>{order.shippingSnapshot.method === 'delivery' && order.shippingSnapshot.fee == null ? 'Sotuvchi bilan kelishiladi' : money(order.shippingSnapshot.fee)}</dd></div><div><dt>Jami</dt><dd>{order.total == null ? 'Yakuniy summa kelishiladi' : money(order.total)}</dd></div></dl>
       </PremiumCard><Link className="btn btn-ghost aisha-back-link" to="/orders"><FiArrowLeft aria-hidden="true" focusable="false" /> Buyurtmalarga qaytish</Link></div>
     </>}
