@@ -1,15 +1,75 @@
-import {useEffect,useMemo,useState} from 'react';
-import {Link,useParams} from 'react-router-dom';
+import {useEffect, useMemo, useState} from 'react';
+import {Link, useParams} from 'react-router-dom';
 import {fetchProduct} from '../../services/catalog.js';
 import {money} from '../../components/shop/ProductCard.jsx';
 import {useCart} from '../../store/cart.jsx';
-export default function Product(){
- const {add}=useCart(),[added,setAdded]=useState(false);
- const {id}=useParams(),[state,setState]=useState({loading:true}),[color,setColor]=useState(''),[size,setSize]=useState(''),[failed,setFailed]=useState(false),[attempt,setAttempt]=useState(0);
- useEffect(()=>{const c=new AbortController();setState({loading:true});setFailed(false);fetchProduct(id,c.signal).then(({product})=>{const first=product.variants.find(v=>v.isAvailable)||product.variants[0];setColor(first?.color||'');setSize(first?.size||'');setState({loading:false,product})}).catch(e=>{if(e.name!=='AbortError')setState({loading:false,error:e.code==='NOT_FOUND'?'Mahsulot topilmadi.':e.code==='DATABASE_UNAVAILABLE'?'Mahsulotlar bazasiga ulanib bo‘lmadi.':'Mahsulotni yuklab bo‘lmadi. Server ulanishini tekshiring.'})});return()=>c.abort()},[id,attempt]);
- const p=state.product,colors=useMemo(()=>[...new Set((p?.variants||[]).map(v=>v.color))],[p]),sizes=useMemo(()=>[...new Set((p?.variants||[]).filter(v=>v.color===color).map(v=>v.size))],[p,color]);
- const v=p?.variants.find(x=>x.color===color&&x.size===size);
- if(state.loading)return <section className="catalog-section" role="status">Mahsulot yuklanmoqda…</section>;
- if(state.error)return <section className="catalog-section"><p role="alert">{state.error}</p><button onClick={()=>setAttempt(x=>x+1)}>Qayta urinish</button> <Link to="/catalog">Katalogga qaytish</Link></section>;
- return <section className="catalog-section"><Link to="/catalog">← Katalogga qaytish</Link><div className="product-layout"><div className="product-photo">{p.imageUrl&&!failed?<img src={p.imageUrl} alt={p.name+' — tasviriy demo surat'} onError={()=>setFailed(true)}/>:<span>Rasm mavjud emas</span>}</div><div><p className="eyebrow">{p.category} · DEMO</p><h1>{p.name}</h1><p>{p.description}</p>{p.variants.length?<><label>Rang<select value={color} onChange={e=>{setAdded(false);const next=e.target.value;setColor(next);const candidates=p.variants.filter(x=>x.color===next);setSize((candidates.find(x=>x.size===size)||candidates.find(x=>x.isAvailable)||candidates[0])?.size||'')}}>{colors.map(x=><option key={x}>{x}</option>)}</select></label><label>O‘lcham<select value={size} onChange={e=>{setAdded(false);setSize(e.target.value)}}>{sizes.map(x=><option key={x}>{x}</option>)}</select></label>{v?<div className="variant-summary" aria-live="polite"><p className="price">{money(v.price)}</p><p className={v.isAvailable?'available':'unavailable'}>{v.isAvailable?'Mavjud':'Sotuvda yo‘q'}</p><section className="product-details" aria-label="Mahsulot xususiyatlari"><h2>Mahsulot xususiyatlari</h2><dl>{[['O‘lcham',v.size],['Rang',v.color],['Material',v.material],['GSM',v.gsm]].map(([label,value])=><div key={label}><dt>{label}</dt><dd>{typeof value==='string'&&value.trim()?value:'Ma’lumot kiritilmagan'}</dd></div>)}</dl></section></div>:<p role="status">Bu variant mavjud emas.</p>}</>:<p>Variantlar hali kiritilmagan.</p>}<button disabled={!v||!v.isAvailable} onClick={()=>{add(p,v);setAdded(true)}}>Savatga qo‘shish</button>{added&&<p role="status">Mahsulot savatda. <Link to="/cart">Savatni ko‘rish</Link></p>}</div></div></section>
+import {BreadcrumbNavigation, ErrorState, LoadingState, PremiumCard, ShopPageHeader, StatusBadge} from '../../components/shop/ShopUI.jsx';
+import {FiArrowLeft, FiArrowRight, FiShoppingBag} from 'react-icons/fi';
+
+export default function Product() {
+  const {add} = useCart();
+  const [added, setAdded] = useState(false);
+  const {id} = useParams();
+  const [state, setState] = useState({loading: true});
+  const [color, setColor] = useState('');
+  const [size, setSize] = useState('');
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setState({loading: true});
+    setFailed(false);
+    fetchProduct(id, controller.signal).then(({product}) => {
+      const first = product.variants.find(variant => variant.isAvailable) || product.variants[0];
+      setColor(first?.color || '');
+      setSize(first?.size || '');
+      setState({loading: false, product});
+    }).catch(error => {
+      if (error.name !== 'AbortError') setState({loading: false, error: error.code === 'NOT_FOUND' ? 'Mahsulot topilmadi.' : error.code === 'DATABASE_UNAVAILABLE' ? 'Mahsulotlar bazasiga ulanib bo‘lmadi.' : 'Mahsulotni yuklab bo‘lmadi. Server ulanishini tekshiring.'});
+    });
+    return () => controller.abort();
+  }, [id, attempt]);
+
+  const product = state.product;
+  const colors = useMemo(() => [...new Set((product?.variants || []).map(variant => variant.color))], [product]);
+  const sizes = useMemo(() => [...new Set((product?.variants || []).filter(variant => variant.color === color).map(variant => variant.size))], [product, color]);
+  const variant = product?.variants.find(item => item.color === color && item.size === size);
+
+  if (state.loading) return <section className="catalog-section aisha-inner-page is-product"><LoadingState label="Mahsulot yuklanmoqda" rows={3} /></section>;
+  if (state.error) return <section className="catalog-section aisha-inner-page is-product">
+    <BreadcrumbNavigation items={[{label: 'Katalog', to: '/catalog'}, {label: 'Mahsulot'}]} />
+    <ErrorState title="Mahsulotni ochib bo‘lmadi" message={state.error}><button className="btn btn-outline" type="button" onClick={() => setAttempt(value => value + 1)}>Qayta urinish</button><Link className="btn btn-ghost" to="/catalog"><FiArrowLeft aria-hidden="true" focusable="false" /> Katalogga qaytish</Link></ErrorState>
+  </section>;
+
+  return <section className="catalog-section aisha-inner-page is-product">
+    <BreadcrumbNavigation items={[{label: 'Bosh sahifa', to: '/'}, {label: 'Katalog', to: '/catalog'}, {label: product.name}]} />
+    <div className="product-layout aisha-product-layout">
+      <PremiumCard className="product-photo aisha-product-photo">
+        {product.imageUrl && !failed ? <img src={product.imageUrl} alt={`${product.name} — tasviriy demo surat`} width="1200" height="1200" fetchPriority="high" onError={() => setFailed(true)} /> : <span>Rasm mavjud emas</span>}
+        <span className="aisha-image-caption">AISHA HOME · DEMO TASVIR</span>
+      </PremiumCard>
+      <div className="aisha-product-information">
+        <ShopPageHeader eyebrow={`${product.category} · DEMO`} title={product.name} description={product.description} />
+        {product.variants.length ? <>
+          <fieldset className="fieldset aisha-variant-fields"><legend className="fieldset-legend">Variantni tanlang</legend>
+            <label className="aisha-form-field">Rang<select className="select select-bordered" value={color} onChange={event => { setAdded(false); const next = event.target.value; setColor(next); const candidates = product.variants.filter(item => item.color === next); setSize((candidates.find(item => item.size === size) || candidates.find(item => item.isAvailable) || candidates[0])?.size || ''); }}>
+              {colors.map(value => <option key={value}>{value}</option>)}
+            </select></label>
+            <label className="aisha-form-field">O‘lcham<select className="select select-bordered" value={size} onChange={event => { setAdded(false); setSize(event.target.value); }}>
+              {sizes.map(value => <option key={value}>{value}</option>)}
+            </select></label>
+          </fieldset>
+          {variant ? <div className="aisha-variant-summary"><p className="price">{money(variant.price)}</p><StatusBadge>{variant.isAvailable ? 'Mavjud' : 'Sotuvda yo‘q'}</StatusBadge></div> : <p className="aisha-variant-unavailable" role="status">Bu variant mavjud emas.</p>}
+          <details className="collapse collapse-arrow aisha-product-details" open>
+            <summary className="collapse-title">Mahsulot xususiyatlari</summary>
+            <div className="collapse-content"><dl>{[['O‘lcham', variant?.size], ['Rang', variant?.color], ['Material', variant?.material], ['GSM', variant?.gsm]].map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{typeof value === 'string' && value.trim() ? value : 'Ma’lumot kiritilmagan'}</dd></div>)}</dl></div>
+          </details>
+        </> : <p className="aisha-variant-unavailable">Variantlar hali kiritilmagan.</p>}
+        <button className="btn btn-primary aisha-add-to-cart" type="button" disabled={!variant || !variant.isAvailable} onClick={() => { add(product, variant); setAdded(true); }}><FiShoppingBag aria-hidden="true" focusable="false" /> Savatga qo‘shish</button>
+        {added && <p className="aisha-added-message" role="status">Mahsulot savatda. <Link className="btn btn-secondary" to="/cart">Savatni ko‘rish <FiArrowRight aria-hidden="true" focusable="false" /></Link></p>}
+      </div>
+    </div>
+    <Link className="btn btn-ghost aisha-back-link" to="/catalog"><FiArrowLeft aria-hidden="true" focusable="false" /> Katalogga qaytish</Link>
+  </section>;
 }
