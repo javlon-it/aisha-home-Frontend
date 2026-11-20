@@ -22,10 +22,10 @@ export default function OrdersAdmin(){
   <p>Mijoz: {order.customerSnapshot?.name||'Ko‘rsatilmagan'}</p><p>Telefon: {order.customerSnapshot?.phone||'Ko‘rsatilmagan'}</p>
   <p>Qabul qilish: {order.shippingSnapshot?.method==='pickup'?'O‘zi olib ketish':'Yetkazib berish'}</p>{order.shippingSnapshot?.address&&<p>Manzil: {order.shippingSnapshot.address}</p>}
   <h3>Mahsulotlar</h3><ul>{(order.items||[]).map((item,index)=><li key={String(item.variantId)+index}>{item.name} · {item.color} · {item.size} × {item.quantity} — {money(item.price*item.quantity)}</li>)}</ul>
-  <p>Mahsulotlar: {money(order.subtotal)}</p><p>Yetkazish: {money(order.shippingSnapshot?.fee)}</p><p><strong>Jami: {money(order.total)}</strong></p>
+  <p>Mahsulotlar: {money(order.subtotal)}</p><p>Yetkazish: {order.shippingSnapshot?.method==='delivery'&&order.shippingSnapshot?.fee==null?'Mijoz bilan kelishiladi':money(order.shippingSnapshot?.fee)}</p><p><strong>Jami: {order.total==null?'Hali tasdiqlanmagan':money(order.total)}</strong></p>
   {order.status==='Yangi'&&<p>24 soatdan so‘ng buyurtmani tasdiqlab bo‘lmaydi; tizim ishlaganda u bekor qilinadi.</p>}
   {nextStatuses[order.status]&&<><label className="admin-order-status">Holatni o‘zgartirish<select disabled={busy} value="" onChange={e=>statusChange(order,e.target.value)}><option value="">Tanlang</option>{nextStatuses[order.status].map(status=><option key={status} value={status}>{status}</option>)}</select></label>
-  {order.shippingSnapshot?.method==='delivery'&&<form className="inventory-form" key={order._id+'-'+order.shippingSnapshot?.fee} onSubmit={e=>saveFee(e,order)}><label>Yetkazish narxi, so‘m<input name="fee" type="number" min="0" max="1000000000" step="1" defaultValue={order.shippingSnapshot?.fee??0} required/></label><button disabled={busy}>Narxni saqlash</button></form>}</>}
+  {order.shippingSnapshot?.method==='delivery'&&<form className="inventory-form" key={order._id+'-'+order.shippingSnapshot?.fee} onSubmit={e=>saveFee(e,order)}><label>Mijoz bilan kelishilgan yetkazish narxi, so‘m<input name="fee" type="number" min="0" max="1000000000" step="1" defaultValue={order.shippingSnapshot?.fee??''} required/></label><button disabled={busy}>Kelishilgan narxni saqlash</button></form>}</>}
  </article>)}
  <nav className="admin-orders-pages" aria-label="Buyurtmalar sahifalari"><button disabled={busy||loading||page===1} onClick={()=>setPage(p=>p-1)}>Oldingi</button><span>{page}-sahifa</span><button disabled={busy||loading||!hasMore} onClick={()=>setPage(p=>p+1)}>Keyingi</button></nav></section>;
 }

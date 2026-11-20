@@ -11,7 +11,7 @@ export default async function handler(req,res){
  let backend;try{backend=new URL(base)}catch{return unavailable(res)}
  if(!/^[a-f0-9]{64}$/i.test(secret)||backend.protocol!=='https:'||backend.origin!==base||backend.username||backend.password)return unavailable(res);
  const route=Array.isArray(req.query?.path)?req.query.path.join('/'):req.query?.path;
- const allowed=({login:'POST',session:'GET',logout:'POST',products:'GET'})[route]===req.method||
+ const allowed=({login:'POST',session:'GET',logout:'POST',products:'GET',dashboard:'GET'})[route]===req.method||
   (route==='products'&&req.method==='POST')||
   (route==='orders'&&req.method==='GET')||
   (route==='sales'&&['GET','POST'].includes(req.method))||
@@ -30,7 +30,7 @@ export default async function handler(req,res){
   (/^variants\/[a-f0-9]{24}$/i.test(route)&&req.method==='PATCH')||
   (/^variants\/[a-f0-9]{24}\/receipts$/i.test(route)&&req.method==='POST');
  if(!allowed)return res.status(404).json({error:{code:'NOT_FOUND',message:'Manzil topilmadi.'}});
- let query='';if(route==='customers'&&req.method==='GET'){const q=req.query?.q;if(q!==undefined){if(typeof q!=='string'||q.length>100)return res.status(400).json({error:{code:'INVALID_SEARCH',message:'Qidiruv matnini tekshiring.'}});query='?q='+encodeURIComponent(q)}}else if(Object.keys(req.query||{}).some(key=>key!=='path'))return res.status(400).json({error:{code:'INVALID_QUERY',message:'So‘rov parametrlarini tekshiring.'}});
+ let query='';if(route==='customers'&&req.method==='GET'){const q=req.query?.q;if(q!==undefined){if(typeof q!=='string'||q.length>100)return res.status(400).json({error:{code:'INVALID_SEARCH',message:'Qidiruv matnini tekshiring.'}});query='?q='+encodeURIComponent(q)}}else if(route==='dashboard'&&req.method==='GET'){const {period,date,...extra}=req.query||{};if(Object.keys(extra).some(key=>key!=='path')||typeof period!=='string'||!['daily','weekly','monthly','yearly'].includes(period)||typeof date!=='string'||!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(date))return res.status(400).json({error:{code:'INVALID_RANGE',message:'Davr yoki sanani tekshiring.'}});query='?period='+encodeURIComponent(period)+'&date='+encodeURIComponent(date)}else if(Object.keys(req.query||{}).some(key=>key!=='path'))return res.status(400).json({error:{code:'INVALID_QUERY',message:'So‘rov parametrlarini tekshiring.'}});
  let ip=req.headers['x-vercel-forwarded-for'];
  if(typeof ip!=='string')return unavailable(res);
  if(ip.startsWith('::ffff:'))ip=ip.slice(7);ip=ip.toLowerCase();
