@@ -1,4 +1,4 @@
-async function request(path,options={}){const response=await fetch('/api/admin'+path,{credentials:'same-origin',cache:'no-store',...options});const body=await response.json();if(!response.ok){const error=new Error(body.error?.message||'Server xatosi');error.status=response.status;throw error}return body}
+async function request(path,options={}){const response=await fetch('/api/admin'+path,{credentials:'same-origin',cache:'no-store',...options});const body=await response.json();if(!response.ok){const error=new Error(body.error?.message||'Server xatosi');error.status=response.status;error.code=body.error?.code;error.customer=body.customer;throw error}return body}
 export const adminSession=(options={})=>request('/session',options);
 export const adminLogin=(username,password)=>request('/login',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Request':'1'},body:JSON.stringify({username,password})});
 export const adminLogout=()=>request('/logout',{method:'POST',headers:{'X-Admin-Request':'1'}});
@@ -9,6 +9,9 @@ export const adminSales=()=>request('/sales');
 export const createAdminSale=(body,key)=>request('/sales',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Request':'1','Idempotency-Key':key},body:JSON.stringify(body)});
 export const adminReturns=()=>request('/returns');
 export const createAdminReturn=(saleId,body,key)=>request('/sales/'+encodeURIComponent(saleId)+'/returns',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Request':'1','Idempotency-Key':key},body:JSON.stringify(body)});
+export const adminCrmCustomers=(query='')=>request('/customers'+(query?'?q='+encodeURIComponent(query):''));
+export const adminCrmCustomer=id=>request('/customers/'+encodeURIComponent(id));
+export const createCrmNote=(id,text)=>request('/customers/'+encodeURIComponent(id)+'/notes',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Request':'1'},body:JSON.stringify({text})});
 export const adminProductAction=(path,method,body,extraHeaders={})=>request(path,{method,headers:{'X-Admin-Request':'1',...(body instanceof ArrayBuffer?{'Content-Type':'application/octet-stream'}:body?{'Content-Type':'application/json'}:{}),...extraHeaders},...(body?{body:body instanceof ArrayBuffer?body:JSON.stringify(body)}:{})});
 // Wake the backend with a safe session check; never retry a login POST.
 export async function prepareAdminLogin({wait=ms=>new Promise(resolve=>setTimeout(resolve,ms)),now=Date.now}={}){
