@@ -15,6 +15,8 @@ export default async function handler(req,res){
   (route==='products'&&req.method==='POST')||
   (route==='orders'&&req.method==='GET')||
   (route==='sales'&&['GET','POST'].includes(req.method))||
+  (route==='returns'&&req.method==='GET')||
+  (/^sales\/[a-f0-9]{24}\/returns$/i.test(route)&&req.method==='POST')||
   (/^orders\/page\/[1-9][0-9]*$/.test(route)&&req.method==='GET')||
   (/^orders\/[a-f0-9]{24}$/i.test(route)&&req.method==='GET')||
   (/^orders\/[a-f0-9]{24}\/(status|delivery-fee)$/i.test(route)&&req.method==='PATCH')||

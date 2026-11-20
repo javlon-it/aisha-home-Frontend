@@ -7,6 +7,8 @@ export const adminOrders=(page=1)=>request(page===1?'/orders':'/orders/page/'+pa
 export const adminOrderAction=(id,field,body)=>request('/orders/'+id+'/'+field,{method:'PATCH',headers:{'Content-Type':'application/json','X-Admin-Request':'1'},body:JSON.stringify(body)});
 export const adminSales=()=>request('/sales');
 export const createAdminSale=(body,key)=>request('/sales',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Request':'1','Idempotency-Key':key},body:JSON.stringify(body)});
+export const adminReturns=()=>request('/returns');
+export const createAdminReturn=(saleId,body,key)=>request('/sales/'+encodeURIComponent(saleId)+'/returns',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Request':'1','Idempotency-Key':key},body:JSON.stringify(body)});
 export const adminProductAction=(path,method,body,extraHeaders={})=>request(path,{method,headers:{'X-Admin-Request':'1',...(body instanceof ArrayBuffer?{'Content-Type':'application/octet-stream'}:body?{'Content-Type':'application/json'}:{}),...extraHeaders},...(body?{body:body instanceof ArrayBuffer?body:JSON.stringify(body)}:{})});
 // Wake the backend with a safe session check; never retry a login POST.
 export async function prepareAdminLogin({wait=ms=>new Promise(resolve=>setTimeout(resolve,ms)),now=Date.now}={}){

@@ -59,3 +59,14 @@ test('shop sale proxy signs the body and forwards the idempotency key',async()=>
   res=response();await handler({method:'GET',query:{path:'sales'},headers},res);assert.equal(res.statusCode,200);res=response();await handler({method:'DELETE',query:{path:'sales'},headers},res);assert.equal(res.statusCode,404);assert.equal(calls,2);
  }finally{globalThis.fetch=originalFetch;for(const k of ['VERCEL_ENV','ADMIN_PROXY_SECRET','ADMIN_PROXY_BACKEND_URL']){if(old[k]===undefined)delete process.env[k];else process.env[k]=old[k]}}
 });
+
+test('shop return routes are signed and preserve return idempotency',async()=>{
+ const old={...process.env},originalFetch=globalThis.fetch;let calls=0,captured;
+ try{process.env.VERCEL_ENV='production';process.env.ADMIN_PROXY_SECRET='ab'.repeat(32);process.env.ADMIN_PROXY_BACKEND_URL='https://backend.example';globalThis.fetch=async(...args)=>{calls++;captured=args;return new Response('{}',{status:200})};
+  const id='65f000000000000000000001',headers={'x-vercel-forwarded-for':'192.0.2.10','idempotency-key':'synthetic-return-key-001','content-type':'application/json','x-admin-request':'1'},body={reason:'Synthetic reason',items:[{saleItemIndex:0,quantity:1,condition:'sellable'}]};
+  let res=response();await handler({method:'GET',query:{path:'returns'},headers},res);assert.equal(res.statusCode,200);
+  res=response();await handler({method:'POST',query:{path:`sales/${id}/returns`},headers,body},res);assert.equal(res.statusCode,200);assert.equal(captured[0],`https://backend.example/api/admin/sales/${id}/returns`);assert.equal(captured[1].headers['Idempotency-Key'],headers['idempotency-key']);
+  const h=captured[1].headers,message=[h['X-Admin-Proxy-Time'],h['X-Admin-Proxy-Nonce'],'192.0.2.10','POST',`/api/admin/sales/${id}/returns`,'',hash(''),hash(JSON.stringify(body))].join('\n');assert.equal(h['X-Admin-Proxy-Signature'],createHmac('sha256',Buffer.from(process.env.ADMIN_PROXY_SECRET,'hex')).update(message).digest('hex'));
+  res=response();await handler({method:'DELETE',query:{path:`sales/${id}/returns`},headers},res);assert.equal(res.statusCode,404);assert.equal(calls,2);
+ }finally{globalThis.fetch=originalFetch;for(const k of ['VERCEL_ENV','ADMIN_PROXY_SECRET','ADMIN_PROXY_BACKEND_URL']){if(old[k]===undefined)delete process.env[k];else process.env[k]=old[k]}}
+});
