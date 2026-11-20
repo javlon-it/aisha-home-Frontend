@@ -33,3 +33,17 @@ test('product image uses signed binary body and enforces the 4 MiB boundary',asy
   res=response();await handler({...req,query:{path:['products',productId,'unexpected']}},res);assert.equal(res.statusCode,404);assert.equal(calls,1);
  }finally{globalThis.fetch=originalFetch;for(const k of ['VERCEL_ENV','ADMIN_PROXY_SECRET','ADMIN_PROXY_BACKEND_URL']){if(old[k]===undefined)delete process.env[k];else process.env[k]=old[k]}}
 });
+
+test('admin order routes are signed and unrelated methods remain closed',async()=>{
+ const old={...process.env},originalFetch=globalThis.fetch;let captured,calls=0;
+ try{
+  process.env.VERCEL_ENV='production';process.env.ADMIN_PROXY_SECRET='ab'.repeat(32);process.env.ADMIN_PROXY_BACKEND_URL='https://backend.invalid';
+  globalThis.fetch=async(...args)=>{captured=args;calls++;return new Response('{}',{status:200})};
+  const id='0123456789abcdef01234567',headers={origin:'https://frontend.invalid','x-vercel-forwarded-for':'192.0.2.2','x-admin-request':'1'};
+  for(const [method,path,body] of [['GET','orders',undefined],['GET','orders/page/2',undefined],['GET','orders/'+id,undefined],['PATCH','orders/'+id+'/status',{status:'Jarayonda'}],['PATCH','orders/'+id+'/delivery-fee',{fee:5000}]]){
+   const res=response();await handler({method,query:{path:path.split('/')},headers,body},res);assert.equal(res.statusCode,200);assert.equal(captured[0],'https://backend.invalid/api/admin/'+path);
+   const h=captured[1].headers,message=[h['X-Admin-Proxy-Time'],h['X-Admin-Proxy-Nonce'],'192.0.2.2',method,'/api/admin/'+path,headers.origin,hash(''),hash(body?JSON.stringify(body):'')].join('\n');assert.equal(h['X-Admin-Proxy-Signature'],createHmac('sha256',Buffer.from(process.env.ADMIN_PROXY_SECRET,'hex')).update(message).digest('hex'));
+  }
+  const denied=response();await handler({method:'DELETE',query:{path:['orders',id]},headers},denied);assert.equal(denied.statusCode,404);assert.equal(calls,5);
+ }finally{globalThis.fetch=originalFetch;for(const k of ['VERCEL_ENV','ADMIN_PROXY_SECRET','ADMIN_PROXY_BACKEND_URL']){if(old[k]===undefined)delete process.env[k];else process.env[k]=old[k]}}
+});

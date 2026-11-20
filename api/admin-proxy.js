@@ -13,6 +13,10 @@ export default async function handler(req,res){
  const route=Array.isArray(req.query?.path)?req.query.path.join('/'):req.query?.path;
  const allowed=({login:'POST',session:'GET',logout:'POST',products:'GET'})[route]===req.method||
   (route==='products'&&req.method==='POST')||
+  (route==='orders'&&req.method==='GET')||
+  (/^orders\/page\/[1-9][0-9]*$/.test(route)&&req.method==='GET')||
+  (/^orders\/[a-f0-9]{24}$/i.test(route)&&req.method==='GET')||
+  (/^orders\/[a-f0-9]{24}\/(status|delivery-fee)$/i.test(route)&&req.method==='PATCH')||
   (/^products\/[a-f0-9]{24}$/i.test(route)&&req.method==='PATCH')||
   (/^products\/[a-f0-9]{24}\/archive$/i.test(route)&&req.method==='POST')||
   (/^products\/[a-f0-9]{24}\/variants$/i.test(route)&&req.method==='POST')||
