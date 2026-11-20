@@ -12,7 +12,8 @@ export default async function handler(req,res){
  let backend;try{backend=new URL(base)}catch{return unavailable(res)}
  if(!/^[a-f0-9]{64}$/i.test(secret)||backend.protocol!=='https:'||backend.origin!==base||backend.username||backend.password)return unavailable(res);
  const route=Array.isArray(req.query?.path)?req.query.path.join('/'):req.query?.path;
- const allowed=({login:'POST',session:'GET',logout:'POST',products:'GET',dashboard:'GET'})[route]===req.method||
+ const settingsAllowed=/^settings\/(branch|shipping)$/.test(route)&&['GET','PATCH'].includes(req.method);
+ const allowed=settingsAllowed||({login:'POST',session:'GET',logout:'POST',products:'GET',dashboard:'GET'})[route]===req.method||
   (route==='products'&&req.method==='POST')||
   (route==='orders'&&req.method==='GET')||
   (route==='sales'&&['GET','POST'].includes(req.method))||
