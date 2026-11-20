@@ -61,7 +61,7 @@ export default function Catalog() {
           <div className="aisha-filter-heading"><div><p className="eyebrow">ANIQ TANLOV</p><h2>Filtrlar</h2></div><button className="btn btn-ghost btn-square aisha-filter-close" type="button" aria-label="Filtrlarni yopish" onClick={() => setOpen(false)}><FiX aria-hidden="true" focusable="false" /></button></div>
           {filterGroups.map(([key, label]) => <details className="collapse collapse-arrow aisha-filter-group" key={key}>
             <summary className="collapse-title">{label}</summary>
-            <div className="collapse-content"><fieldset className="fieldset"><legend className="fieldset-legend">{label}ni tanlang</legend><select className="select select-bordered" value={filters[key]} onChange={e => set(key, e.target.value)}><option value="">Barchasi</option>{options[key].map(value => <option key={value} value={value}>{value}</option>)}</select></fieldset></div>
+            <div className="collapse-content"><fieldset className="fieldset"><legend className="fieldset-legend">{label}ni tanlang</legend><select className="select select-bordered" aria-label={`${label} bo‘yicha filtr`} value={filters[key]} onChange={e => set(key, e.target.value)}><option value="">Barchasi</option>{options[key].map(value => <option key={value} value={value}>{value}</option>)}</select></fieldset></div>
           </details>)}
           <details className="collapse collapse-arrow aisha-filter-group">
             <summary className="collapse-title">Narx oralig‘i</summary>
