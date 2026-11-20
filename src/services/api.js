@@ -1,9 +1,12 @@
 import {normalizeApiBase} from './api-url.js';
 // VITE_ qiymatlari ommaviy. Maxfiy ma'lumotlarni bu yerga kiritmang.
-export function getApiBase(){
-  const configured=import.meta.env.VITE_API_URL;
-  if(!configured && import.meta.env.PROD) throw new Error('VITE_API_URL production uchun sozlanmagan');
+export function resolveApiBase({configured,production}){
+  // Production customer sessions must stay first-party on the Vercel origin.
+  if(production)return '/api';
   return normalizeApiBase(configured || '/api');
+}
+export function getApiBase(){
+  return resolveApiBase({configured:import.meta.env.VITE_API_URL,production:import.meta.env.PROD});
 }
 export async function apiRequest(path, options={}){
   if(!path.startsWith('/') || path.startsWith('//') || path==='/api' || path.startsWith('/api/')) throw new Error('API yo‘li /api qo‘shimchasisiz boshlansin');
