@@ -83,3 +83,14 @@ test('CRM list and profile routes are signed, with bounded phone/name search',as
   res=response();await handler({method:'DELETE',query:{path:['customers',id]},headers},res);assert.equal(res.statusCode,404);assert.equal(calls,3);
  }finally{globalThis.fetch=originalFetch;for(const k of ['VERCEL_ENV','ADMIN_PROXY_SECRET','ADMIN_PROXY_BACKEND_URL']){if(old[k]===undefined)delete process.env[k];else process.env[k]=old[k]}}
 });
+
+test('dashboard proxy allows only signed GET requests with bounded period and date parameters',async()=>{
+ const old={...process.env},originalFetch=globalThis.fetch;let calls=0,captured;
+ try{process.env.VERCEL_ENV='production';process.env.ADMIN_PROXY_SECRET='ab'.repeat(32);process.env.ADMIN_PROXY_BACKEND_URL='https://backend.example';globalThis.fetch=async(...args)=>{calls++;captured=args;return new Response('{}',{status:200})};
+  const headers={'x-vercel-forwarded-for':'192.0.2.10','x-admin-request':'1'};let res=response();
+  await handler({method:'GET',query:{path:'dashboard',period:'daily',date:'2026-11-20'},headers},res);assert.equal(res.statusCode,200);assert.equal(captured[0],'https://backend.example/api/admin/dashboard?period=daily&date=2026-11-20');
+  const signed=captured[1].headers,message=[signed['X-Admin-Proxy-Time'],signed['X-Admin-Proxy-Nonce'],'192.0.2.10','GET','/api/admin/dashboard','',hash(''),hash('')].join('\n');assert.equal(signed['X-Admin-Proxy-Signature'],createHmac('sha256',Buffer.from(process.env.ADMIN_PROXY_SECRET,'hex')).update(message).digest('hex'));
+  res=response();await handler({method:'POST',query:{path:'dashboard'},headers},res);assert.equal(res.statusCode,404);
+  res=response();await handler({method:'GET',query:{path:'dashboard',period:'daily',date:'2026-99-99'},headers},res);assert.equal(res.statusCode,400);assert.equal(calls,1);
+ }finally{globalThis.fetch=originalFetch;for(const key of ['VERCEL_ENV','ADMIN_PROXY_SECRET','ADMIN_PROXY_BACKEND_URL']){if(old[key]===undefined)delete process.env[key];else process.env[key]=old[key]}}
+});
